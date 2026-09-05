@@ -1,6 +1,6 @@
 # Teiko Technical Analysis
 
-This repository contains a straightforward Python solution for the Teiko cell-count assignment. It loads `cell-count.csv` into SQLite, generates the requested summary tables and statistical outputs, and starts a small interactive Streamlit dashboard.
+This repo loads `cell-count.csv` into SQLite, creates the requested analysis tables and plots, and runs a small Streamlit dashboard.
 
 ## Run
 
@@ -89,18 +89,18 @@ flowchart LR
     plot --> dashboard
 ```
 
-The first diagram explains the database relationships. The second diagram explains how the project runs: the CSV is loaded into SQLite, the analysis script generates reproducible outputs, and the dashboard reads the database to show the results interactively.
+The first diagram shows the database tables. The second shows the path from the CSV to the database, output files, and dashboard.
 
 ## Code Structure
 
-- `load_data.py` creates the schema and loads the CSV into SQLite. It is intentionally executable with `python load_data.py` and requires no arguments.
+- `load_data.py` creates the schema and loads the CSV into SQLite. It can be run with `python load_data.py` and does not need arguments.
 - `analysis.py` reads from SQLite, computes relative frequencies, performs responder statistics, writes output files, and saves the boxplot.
-- `dashboard.py` reads from SQLite and exposes an interactive dashboard for filtering data, reviewing the frequency table, comparing responder groups, viewing the statistics table, and inspecting baseline subset summaries.
-- `Makefile` provides the exact `setup`, `pipeline`, and `dashboard` targets requested by the assignment.
+- `dashboard.py` reads from SQLite and runs the dashboard for filters, the frequency table, responder comparison, statistics table, and baseline subset summaries.
+- `Makefile` provides the required `setup`, `pipeline`, and `dashboard` targets.
 
 ## Statistical Decision
 
-For each immune population, the program compares relative frequency percentages between melanoma PBMC miraclib responders and non-responders using Welch's two-sample t-test. Welch's test was chosen because it does not assume the two response groups have equal variance. Results are marked significant when `p_value < 0.05`.
+For each immune population, the program compares relative frequency percentages between melanoma PBMC miraclib responders and non-responders using Welch's two-sample t-test. I used Welch's test because it does not assume the two groups have the same variance. Results are marked significant when `p_value < 0.05`.
 
 In the generated output, `cd4_t_cell` is the only population marked significant at the 0.05 level. Its responder mean frequency is higher by 0.64 percentage points, with `p_value = 0.005013`.
 
@@ -118,5 +118,3 @@ For baseline melanoma PBMC samples from miraclib-treated subjects:
 Run `make dashboard` locally. Streamlit will print a local URL, typically:
 
 http://localhost:8501
-
-The dashboard is intentionally local because the assignment says the grader will run the project in GitHub Codespaces. In Codespaces, the same command starts Streamlit and exposes the forwarded port URL.

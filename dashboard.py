@@ -60,14 +60,27 @@ if not DB_PATH.exists():
 
 df = load_data()
 
-with st.sidebar:
-    condition_options = sorted(df["condition"].unique())
-    treatment_options = sorted(df["treatment"].unique())
-    sample_type_options = sorted(df["sample_type"].unique())
+st.subheader("Relative Frequency Summary")
+condition_options = sorted(df["condition"].unique())
+treatment_options = sorted(df["treatment"].unique())
+sample_type_options = sorted(df["sample_type"].unique())
 
-    condition = st.multiselect("Condition", condition_options, default=condition_options)
-    treatment = st.multiselect("Treatment", treatment_options, default=treatment_options)
-    sample_type = st.multiselect("Sample type", sample_type_options, default=sample_type_options)
+filter_cols = st.columns(3)
+condition = filter_cols[0].multiselect(
+    "Condition",
+    condition_options,
+    default=condition_options,
+)
+treatment = filter_cols[1].multiselect(
+    "Treatment",
+    treatment_options,
+    default=treatment_options,
+)
+sample_type = filter_cols[2].multiselect(
+    "Sample type",
+    sample_type_options,
+    default=sample_type_options,
+)
 
 filtered = df[
     df["condition"].isin(condition)
@@ -75,7 +88,6 @@ filtered = df[
     & df["sample_type"].isin(sample_type)
 ]
 
-st.subheader("Relative Frequency Summary")
 st.dataframe(
     filtered[["sample", "total_count", "population", "count", "percentage"]]
     .sort_values(["sample", "population"]),

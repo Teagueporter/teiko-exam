@@ -1,0 +1,8 @@
+metric,category,count
+samples_by_project,prj1,384
+samples_by_project,prj3,272
+subjects_by_response,no,325
+subjects_by_response,yes,331
+subjects_by_sex,F,312
+subjects_by_sex,M,344
+avg_b_cells_melanoma_male_responders_time_0,all_sample_and_treatment_types,10206.15

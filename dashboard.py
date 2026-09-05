@@ -61,9 +61,13 @@ if not DB_PATH.exists():
 df = load_data()
 
 with st.sidebar:
-    condition = st.multiselect("Condition", sorted(df["condition"].unique()), default=sorted(df["condition"].unique()))
-    treatment = st.multiselect("Treatment", sorted(df["treatment"].unique()), default=sorted(df["treatment"].unique()))
-    sample_type = st.multiselect("Sample type", sorted(df["sample_type"].unique()), default=sorted(df["sample_type"].unique()))
+    condition_options = sorted(df["condition"].unique())
+    treatment_options = sorted(df["treatment"].unique())
+    sample_type_options = sorted(df["sample_type"].unique())
+
+    condition = st.multiselect("Condition", condition_options, default=condition_options)
+    treatment = st.multiselect("Treatment", treatment_options, default=treatment_options)
+    sample_type = st.multiselect("Sample type", sample_type_options, default=sample_type_options)
 
 filtered = df[
     df["condition"].isin(condition)
@@ -83,6 +87,7 @@ comparison = df[
     (df["condition"].str.lower() == "melanoma")
     & (df["treatment"].str.lower() == "miraclib")
     & (df["sample_type"].str.upper() == "PBMC")
+    & (df["response"].isin(["yes", "no"]))
 ]
 fig = px.box(
     comparison,
@@ -109,22 +114,29 @@ baseline = df[
     & (df["sample_type"].str.upper() == "PBMC")
     & (df["time_from_treatment_start"] == 0)
 ].drop_duplicates("sample")
+baseline_subjects = baseline.drop_duplicates(["project", "subject"])
 
 left, middle, right = st.columns(3)
 left.metric("Baseline samples", len(baseline))
 middle.metric("Projects", baseline["project"].nunique())
-right.metric("Subjects", baseline["subject"].nunique())
+right.metric("Subjects", len(baseline_subjects))
 
-project_counts = baseline["project"].value_counts().sort_index().rename_axis("project").reset_index(name="samples")
+project_counts = (
+    baseline["project"]
+    .value_counts()
+    .sort_index()
+    .rename_axis("project")
+    .reset_index(name="samples")
+)
 response_counts = (
-    baseline.drop_duplicates("subject")["response"]
+    baseline_subjects["response"]
     .value_counts()
     .sort_index()
     .rename_axis("response")
     .reset_index(name="subjects")
 )
 sex_counts = (
-    baseline.drop_duplicates("subject")["sex"]
+    baseline_subjects["sex"]
     .value_counts()
     .sort_index()
     .rename_axis("sex")
@@ -156,6 +168,16 @@ st.metric(
 )
 
 st.dataframe(
-    baseline[["project", "subject", "response", "sex", "sample", "sample_type", "time_from_treatment_start"]],
+    baseline[
+        [
+            "project",
+            "subject",
+            "response",
+            "sex",
+            "sample",
+            "sample_type",
+            "time_from_treatment_start",
+        ]
+    ],
     use_container_width=True,
 )

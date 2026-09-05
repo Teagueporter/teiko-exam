@@ -4,11 +4,11 @@ import sqlite3
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from scipy import stats
 
 
 ROOT = Path(__file__).resolve().parent
 DB_PATH = ROOT / "teiko.db"
-OUTPUT_DIR = ROOT / "outputs"
 
 
 @st.cache_data
@@ -43,14 +43,6 @@ def load_data() -> pd.DataFrame:
         return pd.read_sql_query(query, conn)
 
 
-@st.cache_data
-def load_responder_statistics() -> pd.DataFrame:
-    stats_path = OUTPUT_DIR / "responder_statistics.csv"
-    if not stats_path.exists():
-        return pd.DataFrame()
-    return pd.read_csv(stats_path)
-
-
 def checkbox_filter(label: str, options: list[str]) -> list[str]:
     st.caption(label)
     cols = st.columns(len(options))
@@ -59,6 +51,25 @@ def checkbox_filter(label: str, options: list[str]) -> list[str]:
         if col.checkbox(option, value=True, key=f"{label}-{option}"):
             selected.append(option)
     return selected
+
+
+def responder_statistics(comparison: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    for population, group in comparison.groupby("population"):
+        responders = group.loc[group["response"] == "yes", "percentage"]
+        non_responders = group.loc[group["response"] == "no", "percentage"]
+        _, p_value = stats.ttest_ind(responders, non_responders, equal_var=False)
+        rows.append(
+            {
+                "population": population,
+                "responder_mean_pct": responders.mean(),
+                "non_responder_mean_pct": non_responders.mean(),
+                "mean_difference_pct": responders.mean() - non_responders.mean(),
+                "p_value": p_value,
+                "significant_at_0.05": p_value < 0.05,
+            }
+        )
+    return pd.DataFrame(rows).sort_values("p_value")
 
 
 st.set_page_config(page_title="Teiko Cell Analysis", layout="wide")
@@ -112,13 +123,7 @@ fig = px.box(
 )
 st.plotly_chart(fig, use_container_width=True)
 
-stats_table = load_responder_statistics()
-if not stats_table.empty:
-    st.dataframe(
-        stats_table.sort_values("p_value"),
-        use_container_width=True,
-        hide_index=True,
-    )
+st.dataframe(responder_statistics(comparison), use_container_width=True, hide_index=True)
 
 st.subheader("Baseline Melanoma PBMC Miraclib Samples")
 baseline = df[

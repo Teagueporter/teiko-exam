@@ -51,6 +51,16 @@ def load_responder_statistics() -> pd.DataFrame:
     return pd.read_csv(stats_path)
 
 
+def checkbox_filter(label: str, options: list[str]) -> list[str]:
+    st.caption(label)
+    cols = st.columns(len(options))
+    selected = []
+    for col, option in zip(cols, options):
+        if col.checkbox(option, value=True, key=f"{label}-{option}"):
+            selected.append(option)
+    return selected
+
+
 st.set_page_config(page_title="Teiko Cell Analysis", layout="wide")
 st.title("Teiko Cell Analysis")
 
@@ -66,21 +76,12 @@ treatment_options = sorted(df["treatment"].unique())
 sample_type_options = sorted(df["sample_type"].unique())
 
 filter_cols = st.columns(3)
-condition = filter_cols[0].multiselect(
-    "Condition",
-    condition_options,
-    default=condition_options,
-)
-treatment = filter_cols[1].multiselect(
-    "Treatment",
-    treatment_options,
-    default=treatment_options,
-)
-sample_type = filter_cols[2].multiselect(
-    "Sample type",
-    sample_type_options,
-    default=sample_type_options,
-)
+with filter_cols[0]:
+    condition = checkbox_filter("Condition", condition_options)
+with filter_cols[1]:
+    treatment = checkbox_filter("Treatment", treatment_options)
+with filter_cols[2]:
+    sample_type = checkbox_filter("Sample type", sample_type_options)
 
 filtered = df[
     df["condition"].isin(condition)

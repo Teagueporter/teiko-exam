@@ -65,7 +65,7 @@ def responder_statistics(frequencies: pd.DataFrame) -> pd.DataFrame:
     for population, group in subset.groupby("population"):
         responders = group.loc[group["response"] == "yes", "percentage"]
         non_responders = group.loc[group["response"] == "no", "percentage"]
-        statistic, p_value = stats.ttest_ind(
+        _, p_value = stats.ttest_ind(
             responders, non_responders, equal_var=False, nan_policy="omit"
         )
         rows.append(
@@ -121,10 +121,12 @@ def subset_analysis(conn: sqlite3.Connection) -> pd.DataFrame:
     summary_rows = []
     for label, counts in {
         "samples_by_project": baseline["project"].value_counts().sort_index(),
-        "subjects_by_response": baseline.drop_duplicates("subject")["response"]
+        "subjects_by_response": baseline.drop_duplicates(["project", "subject"])["response"]
         .value_counts()
         .sort_index(),
-        "subjects_by_sex": baseline.drop_duplicates("subject")["sex"].value_counts().sort_index(),
+        "subjects_by_sex": baseline.drop_duplicates(["project", "subject"])["sex"]
+        .value_counts()
+        .sort_index(),
     }.items():
         for category, count in counts.items():
             summary_rows.append({"metric": label, "category": category, "count": int(count)})

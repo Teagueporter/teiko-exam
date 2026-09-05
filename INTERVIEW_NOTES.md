@@ -2,11 +2,11 @@
 
 ## One-sentence summary
 
-This project loads the cell-count CSV into a normalized SQLite database, computes per-sample immune-cell relative frequencies, compares melanoma PBMC miraclib responders against non-responders, writes reproducible output files, and exposes the results in a Streamlit dashboard.
+The project loads the cell-count CSV into SQLite, calculates per-sample immune-cell frequencies, compares melanoma PBMC miraclib responders with non-responders, writes output files, and shows the results in a Streamlit dashboard.
 
 ## What the assignment asked for
 
-The take-home asked for four pieces:
+The assignment asked for four pieces:
 
 1. Create a SQLite schema and a root-level `load_data.py` script that loads `cell-count.csv` into a `.db` file.
 2. Calculate each immune population's relative frequency within each sample.
@@ -17,7 +17,7 @@ It also asked for a dashboard, a README, generated input/output files, and a Mak
 
 ## Why SQLite
 
-SQLite was chosen because the assignment explicitly requested it and because it is a good fit for a self-contained take-home project. It creates a single portable `.db` file, requires no server setup, works in GitHub Codespaces, and is easy for graders to reproduce.
+I used SQLite because the prompt asked for it. It also fits this project well: it creates one `.db` file, needs no database server, and works cleanly in Codespaces.
 
 ## Why the schema is normalized
 
@@ -35,13 +35,13 @@ This separates information by what it describes:
 - sample metadata belongs in `samples`
 - immune population counts belong in `cell_counts`
 
-The main benefit is avoiding repeated metadata. In the CSV, each sample row repeats project and subject information. In the database, that information is stored once and linked by keys.
+This avoids repeated metadata. In the CSV, each sample row repeats project and subject information. In the database, that information is stored once and linked by keys.
 
 The other important decision is storing cell populations as rows in `cell_counts`, not as five hard-coded columns. That makes analytics easier because every population can be grouped, filtered, or compared using the same query pattern. If more immune populations were added later, the schema would not need to change.
 
 ## Why subject uniqueness is project-scoped
 
-The schema uses `UNIQUE(project_id, subject_code)` for subjects. That means a subject code only needs to be unique inside a project.
+The schema uses `UNIQUE(project_id, subject_code)` for subjects. A subject code only needs to be unique inside a project.
 
 That is safer than assuming subject codes are globally unique forever. In multi-project clinical data, two projects can easily reuse the same subject naming convention. Project-scoped uniqueness handles that case cleanly.
 
@@ -49,7 +49,7 @@ That is safer than assuming subject codes are globally unique forever. In multi-
 
 Some rows have blank response values, especially healthy/control rows where treatment response is not meaningful. The schema allows `response` to be `NULL` rather than inventing a fake value.
 
-The responder analysis then explicitly filters to `response IN ('yes', 'no')`, so only valid responder/non-responder samples are compared.
+The responder analysis filters to `response IN ('yes', 'no')`, so only valid responder/non-responder samples are compared.
 
 ## Why relative frequency is calculated
 
@@ -68,7 +68,7 @@ The responder analysis compares two independent groups:
 - responders
 - non-responders
 
-Welch's two-sample t-test was chosen because it compares group means without assuming both groups have equal variance. That is a reasonable default for biological data where variability can differ between groups.
+I used Welch's two-sample t-test because it compares group means without assuming both groups have equal variance. That is a reasonable default here because biological measurements often have different variability between groups.
 
 The project marks results significant when:
 
@@ -84,17 +84,17 @@ p_value = 0.005013
 mean_difference_pct = 0.635547
 ```
 
-That means responders had a higher average CD4 T-cell relative frequency than non-responders by about 0.64 percentage points.
+Responders had a higher average CD4 T-cell relative frequency than non-responders by about 0.64 percentage points.
 
 ## Why Streamlit
 
-Streamlit was chosen because it creates a useful interactive dashboard with minimal extra code. For this assignment, the dashboard does not need custom frontend infrastructure. It needs to let someone inspect tables, filter data, and view the responder comparison plot.
+I used Streamlit because it gives us an interactive dashboard without much extra code. For this project, the dashboard just needs to show tables, filters, and the responder comparison plot.
 
-The dashboard reads from the same SQLite database as the analysis pipeline, so it shows the same source-of-truth data.
+The dashboard reads from the same SQLite database as the analysis pipeline.
 
 ## Why the Makefile uses a virtual environment
 
-The Makefile creates a local `.venv` because modern Python installations often block global package installation. A project-local virtual environment makes the setup reproducible and avoids changing the user's system Python.
+The Makefile creates a local `.venv` because modern Python installations often block global package installation. A project-local virtual environment also avoids changing the user's system Python.
 
 The required commands are:
 
@@ -117,7 +117,7 @@ cell-count.csv
   -> dashboard.py
 ```
 
-`load_data.py` handles data management. `analysis.py` handles reproducible calculations. `dashboard.py` handles interactive exploration.
+`load_data.py` handles the database. `analysis.py` handles the calculations. `dashboard.py` handles the interactive view.
 
 ## Final results to know
 
@@ -152,11 +152,11 @@ Keeping the CSV shape would work for this small file, but it would hard-code the
 
 **Why not use a more complex statistical model?**
 
-The assignment asked for a straightforward comparison between responders and non-responders. Welch's t-test is transparent, easy to explain, and appropriate for an initial analysis. A larger production analysis might use regression models to control for time point, project, sex, age, and repeated samples per subject.
+The assignment asked for a direct comparison between responders and non-responders. Welch's t-test is easy to explain and works for an initial analysis. A larger production analysis might use regression models to control for time point, project, sex, age, and repeated samples per subject.
 
 **What is one limitation of the analysis?**
 
-Samples from the same subject may not be fully independent because subjects can have multiple time points. This project follows the assignment's requested summary-table comparison, but a more advanced analysis could use subject-level aggregation or a mixed-effects model.
+Samples from the same subject may not be fully independent because subjects can have multiple time points. This follows the requested comparison, but a more advanced analysis could use subject-level aggregation or a mixed-effects model.
 
 **Why include generated outputs in the repository?**
 
